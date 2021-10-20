@@ -9,20 +9,26 @@ from adafruit_ble import BLERadio
 from adafruit_ble.advertising import *
 from _bleio import adapter
 from math import floor
+# CircuitPython packages used.
 
 # specifically written for the Adafruit nRF52840 Bluefruit Feather 
 # 0x01 => flags
 # 0x02 => incomplete list of 16-bit UUIDs
+# 0x03 => complete list of 16-bit UUIDs
+# 0x04 => incomplete list of 32-bit UUIDs
+# 0x05 => complete list of 32-bit UUIDs
 # 0x06 => incomplete list of 128-bit UUIDs
+# 0x07 => complete list of 128-bit UUIDs
 # 0x08 => shortened local name
 # 0x09 => complete local name
+# 0x0A => Tx power level of packet (1 byte) (-127 to +127 dBm)
 # 0xFF => manufacturer specific payload
 
 class AD:
     # make your own Advertising Data packet.
     def __init__(self, length, dtype, payload, endian='little'):
         """
-        length: The length of the AD packet including the type byte.
+        length: The length (in base 16) of the AD packet including the type byte.
         dtype: A 1-byte string representing one the datatype of the payload as documented in the Bluetooth Generic Access Profile (GAP)
         payload: The actual payload. The length of this should be equal to (length - 1).
         endian: Endianness of the datatype. Specify if 'big' or 'little'. Default 'little'.
@@ -90,3 +96,23 @@ def CompleteName(fullName):
     for i in to_hex(bytes(fullName, 'utf-8')).split(' '):
         pl += i
     return AD(l, '09', pl).join()
+
+def UUID_16(uuid, complete="complete"):
+    """
+    Get AD packet for in/complete list of 16-bit UUIDs.
+    `uuid` should be a string representing the hex, like '0x7e2f' => '7e2f'.
+    """
+    l = '03'
+    dt = '03' if complete=='complete' else '02'
+    pl = uuid
+    return AD(l, dt, pl).join()
+
+def UUID_128(uuid, complete="complete"):
+    """
+    Get AD packet for in/complete list of 128-bit UUIDs.
+    `uuid` should be a string representing the hex, like '07f75536-cf60-4289-bb1c-6f50f8daf622'.
+    """
+    l = '11'
+    dt = '07' if complete=='complete' else '06'
+    pl = ''.join(uuid.split('-'))
+    return AD(l, dt, pl).join()
