@@ -54,12 +54,15 @@ class AD:
 
     def join(self):
         l, dt, pl = self.parse() # in pure hex byte representation
+        # convert from little to big endian if needed.
+        if self.endian != 'little':
+            pl = b''.join([pl[i: i+1] for i in range(len(pl)-1, -1, -1)])
 
         if len(pl) > (self.l - 1):
             pl = pl[:self.l - 1]
-        if len(pl) < (self.l - 1) and endian == 'little':
+        if len(pl) < (self.l - 1) and self.endian == 'little':
             pl = '\x00' * (self.l - 1 - len(pl)) + pl
-        if len(pl) < (self.l - 1) and endian == 'big':
+        if len(pl) < (self.l - 1) and self.endian == 'big':
             pl = pl + '\x00' * (self.l - 1 - len(pl))
         
         return (l + dt + pl)
@@ -75,7 +78,7 @@ def Flag(flag='0x06'):
     l = '02'
     dt = '01'
     f = flag.split('0x')[1]
-    return AD(l, dt, f).join()
+    return AD(l, dt, f, 'little').join()
 
 def ShortName(ShortName):
     """
@@ -85,7 +88,7 @@ def ShortName(ShortName):
     pl = ''
     for i in to_hex(bytes(ShortName, 'utf-8')).split(' '):
         pl += i
-    return AD(l, '08', pl).join()
+    return AD(l, '08', pl, 'little').join()
 
 def CompleteName(fullName):
     """
@@ -95,24 +98,26 @@ def CompleteName(fullName):
     pl = ''
     for i in to_hex(bytes(fullName, 'utf-8')).split(' '):
         pl += i
-    return AD(l, '09', pl).join()
+    return AD(l, '09', pl, 'little').join()
 
-def UUID_16(uuid, complete="complete"):
+def UUID_16(uuid, complete=True):
     """
     Get AD packet for in/complete list of 16-bit UUIDs.
     `uuid` should be a string representing the hex, like '0x7e2f' => '7e2f'.
+    stored in big endian format.
     """
     l = '03'
-    dt = '03' if complete=='complete' else '02'
+    dt = '03' if complete else '02'
     pl = uuid
-    return AD(l, dt, pl).join()
+    return AD(l, dt, pl, 'big').join()
 
-def UUID_128(uuid, complete="complete"):
+def UUID_128(uuid, complete=True):
     """
     Get AD packet for in/complete list of 128-bit UUIDs.
     `uuid` should be a string representing the hex, like '07f75536-cf60-4289-bb1c-6f50f8daf622'.
+    stored in big endian format.
     """
     l = '11'
-    dt = '07' if complete=='complete' else '06'
+    dt = '07' if complete else '06'
     pl = ''.join(uuid.split('-'))
-    return AD(l, dt, pl).join()
+    return AD(l, dt, pl, 'big').join()
